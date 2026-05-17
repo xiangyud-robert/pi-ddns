@@ -345,6 +345,12 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "lambda:UpdateFunctionConfiguration",
       "lambda:GetFunction",
       "lambda:GetFunctionConfiguration",
+      "lambda:GetFunctionCodeSigningConfig",
+      "lambda:GetFunctionEventInvokeConfig",
+      "lambda:GetFunctionUrlConfig",
+      "lambda:GetPolicy",
+      "lambda:ListVersionsByFunction",
+      "lambda:ListAliases",
     ]
     resources = [aws_lambda_function.ddns.arn]
   }
@@ -366,7 +372,31 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "arn:aws:apigateway:${var.aws_region}::/apikeys/${aws_api_gateway_api_key.home_server.id}",
       "arn:aws:apigateway:${var.aws_region}::/usageplans/${aws_api_gateway_usage_plan.ddns.id}",
       "arn:aws:apigateway:${var.aws_region}::/usageplans/${aws_api_gateway_usage_plan.ddns.id}/*",
+      "arn:aws:apigateway:${var.aws_region}::/domainnames/${var.api_domain_name}",
+      "arn:aws:apigateway:${var.aws_region}::/domainnames/${var.api_domain_name}/*",
     ]
+  }
+  # Read IAM roles and policies this project manages (needed for terraform plan/apply)
+  statement {
+    actions = [
+      "iam:GetRole",
+      "iam:GetRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListOpenIDConnectProviders",
+      "iam:GetOpenIDConnectProvider",
+    ]
+    resources = ["*"]
+  }
+  # Read ACM certificates this project manages (needed for terraform plan/apply)
+  statement {
+    actions   = ["acm:DescribeCertificate", "acm:ListTagsForCertificate"]
+    resources = [aws_acm_certificate.api.arn]
+  }
+  # Read Route53 records this project manages (needed for terraform plan/apply)
+  statement {
+    actions   = ["route53:GetHostedZone", "route53:ListResourceRecordSets"]
+    resources = ["arn:aws:route53:::hostedzone/${var.hosted_zone_id}"]
   }
 }
 
@@ -374,4 +404,9 @@ resource "aws_iam_role_policy" "github_actions" {
   name   = "pi-ddns-deploy"
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions_permissions.json
+
+  lifecycle {
+    # Prevent CI from modifying its own role policy — apply IAM changes locally with admin credentials.
+    ignore_changes = [policy]
+  }
 }
