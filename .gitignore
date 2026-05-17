@@ -1,0 +1,15 @@
+# Lambda build output
+lambda/dist/
+lambda/node_modules/
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/backend.hcl
+terraform/*.tfplan
+*.tfstate
+*.tfstate.backup
+
+# temp remove github action
+.github
