@@ -1,5 +1,6 @@
 # Lambda build output
 lambda/dist/
+lambda/dist.zip
 lambda/node_modules/
 
 # Terraform

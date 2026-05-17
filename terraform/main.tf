@@ -71,8 +71,8 @@ resource "aws_iam_role_policy" "route53_upsert" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../lambda/dist/handler.js"
-  output_path = "${path.module}/../lambda/dist/handler.zip"
+  source_dir  = "${path.module}/../lambda/dist"
+  output_path = "${path.module}/../lambda/dist.zip"
 }
 
 resource "aws_lambda_function" "ddns" {
