@@ -22,7 +22,7 @@ These steps are only needed once. After that, CI handles all deployments.
 ### 1. Prerequisites
 
 - AWS CLI configured with admin credentials
-- Terraform ≥ 1.6
+- Terraform ≥ 1.10
 - Node.js 24 (LTS)
 
 - Create an S3 bucket for Terraform state (versioning + encryption recommended):
@@ -55,21 +55,6 @@ aws s3api put-bucket-tagging \
   --tagging 'TagSet=[{Key=Environment,Value=global},{Key=ManagedBy,Value=terraform},{Key=Name,Value="Terraform State Store"}]'
 
 echo "Bucket: $BUCKET"
-```
-
-- Create a DynamoDB table for Terraform state locking (prevents concurrent `apply` runs from corrupting state):
-
-```bash
-REGION="us-west-2"
-TABLE="pi-ddns-terraform-locks"
-
-aws dynamodb create-table \
-  --table-name "$TABLE" \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region "$REGION" \
-  --tags Key=Environment,Value=global Key=ManagedBy,Value=terraform Key=Name,Value="Terraform State Locks"
 ```
 
 - GitHub OIDC provider registered in your AWS account:

@@ -4,5 +4,5 @@
 bucket         = "pi-ddns-terraform-state-{AWS_ACCOUNT_ID}"
 key            = "pi-ddns/terraform.tfstate"
 region         = "us-west-2"
-dynamodb_table = "pi-ddns-terraform-locks"
 encrypt        = true
+use_lockfile   = true
