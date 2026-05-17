@@ -39,6 +39,12 @@ variable "api_quota_limit" {
   default     = 300
 }
 
+variable "api_domain_name" {
+  description = "Custom domain name for the API Gateway endpoint (e.g. ddns-api.example.com)"
+  type        = string
+  default     = "ddns-api.example.com"
+}
+
 variable "tf_state_bucket" {
   description = "S3 bucket name used for Terraform state (used to scope the GitHub Actions IAM policy)"
   type        = string

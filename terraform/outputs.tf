@@ -1,6 +1,6 @@
 output "api_endpoint" {
   description = "API Gateway endpoint — use this in your cron job"
-  value       = "${aws_api_gateway_stage.prod.invoke_url}/update"
+  value       = "https://${aws_api_gateway_domain_name.api.domain_name}/update"
 }
 
 output "api_key_id" {

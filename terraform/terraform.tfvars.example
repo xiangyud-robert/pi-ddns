@@ -1,10 +1,11 @@
 # Copy this file to terraform.tfvars and fill in the values.
 # terraform.tfvars is gitignored — never commit it.
 
-aws_region     = "us-west-2"
-hosted_zone_id = "Z1D633PJN98FT9"   # your Route53 hosted zone ID
-record_name    = "home.example.com"  # the A record to keep updated
-ttl            = 60
+aws_region      = "us-west-2"
+hosted_zone_id  = "Z1D633PJN98FT9"       # your Route53 hosted zone ID
+record_name     = "home.example.com"     # the A record to keep updated
+api_domain_name = "ddns-api.example.com" # custom domain for the API Gateway endpoint
+ttl             = 60
 
 # API Gateway rate limits
 api_throttle_rate_limit  = 1    # requests/second (steady state)

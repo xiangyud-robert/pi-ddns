@@ -96,8 +96,8 @@ terraform apply
 ### 5. Note the outputs
 
 ```
-api_endpoint           = "https://<id>.execute-api.us-west-2.amazonaws.com/prod/update"
-api_key_id             = "<key-id>"
+api_endpoint            = "https://ddns-api.example.com/update"
+api_key_id              = "<key-id>"
 github_actions_role_arn = "arn:aws:iam::<account>:role/pi-ddns-github-actions"
 ```
 
