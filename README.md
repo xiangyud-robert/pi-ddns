@@ -127,8 +127,7 @@ aws apigateway get-api-key --api-key <key-id> --include-value --query value --ou
 Confirm the API Gateway and Lambda are working before wiring up CI or the cron job:
 
 ```bash
-curl -sf -H "x-api-key: <your-api-key>" \
-  https://ddns-api.example.com/health
+curl -H "x-api-key: <your-api-key>" https://ddns-api.example.com/health
 # {"status":"ok","timestamp":"2026-05-16T10:00:00.000Z"}
 ```
 
@@ -146,14 +145,30 @@ A `200` response confirms everything is wired up correctly. No DNS record is mod
 | `API_DOMAIN_NAME` | e.g. `ddns-api.example.com` |
 | `TF_STATE_BUCKET` | your S3 bucket name for Terraform state |
 
-### 8. Cron job on the Pi
+### 8. Manually update A Records on any machine
 
 ```bash
-# /etc/cron.d/ddns  (or crontab -e)
-*/5 * * * * root curl -sf -X POST \
-  -H "x-api-key: <your-api-key>" \
-  https://ddns-api.example.com/update \
-  >> /var/log/ddns.log 2>&1
+curl -sX POST -H "x-api-key: <your-api-key>" https://ddns-api.example.com/update
+```
+
+### 9. Set up cron job on the Pi
+
+**Option A — create ddns file at `/etc/cron.d/ddns`** (system-wide, runs as root):
+
+```
+*/5 * * * * root /bin/bash -c 'echo "$(date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ) $(curl -sX POST -H "x-api-key: <your-api-key>" https://ddns-api.example.com/update 2>&1)" >> /var/log/ddns.log'
+```
+
+**Option B — `crontab -e`** (current user's crontab, no username field):
+
+```
+*/5 * * * * /bin/bash -c 'echo "$(date -u +\%Y-\%m-\%dT\%H:\%M:\%SZ) $(curl -sX POST -H "x-api-key: <your-api-key>" https://ddns-api.example.com/update 2>&1)" >> /var/log/ddns.log'
+```
+
+Check log at  /var/log/ddns.log and each line in the log will look like:
+
+```
+2026-05-17T23:00:01Z {"records":["home.example.com","vpn.example.com"],"ip":"1.2.3.4","updated":true}
 ```
 
 ## Switching to a different AWS account
