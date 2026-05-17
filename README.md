@@ -21,17 +21,27 @@ These steps are only needed once. After that, CI handles all deployments.
 
 ### 1. Prerequisites
 
-- AWS CLI configured with admin credentials
+- AWS CLI configured with admin credentials — the active profile must have the following permissions:
+
+  | AWS Managed Policy                | Why                                                          |
+  |-----------------------------------|--------------------------------------------------------------|
+  | `AmazonAPIGatewayAdministrator`   | Create and configure the REST API, usage plan, and API key   |
+  | `AmazonRoute53FullAccess`         | Upsert DNS records for ACM cert validation and the API alias |
+  | `AmazonS3FullAccess`              | Read and write Terraform state in the S3 bucket              |
+  | `AWSCertificateManagerFullAccess` | Request and validate the ACM certificate                     |
+  | `AWSLambda_FullAccess`            | Create and configure the Lambda function                     |
+  | `IAMFullAccess`                   | Create IAM roles, policies, and the OIDC provider            |
+
 - Terraform ≥ 1.10
 - Node.js 24 (LTS)
-
-> The AWS account ID is inferred automatically from your local AWS CLI profile via `aws sts get-caller-identity`. Make sure the correct profile is active before running any commands (e.g. `export AWS_PROFILE=my-profile`).
 
 - Create an S3 bucket for Terraform state (versioning + encryption recommended):
 
 ```bash
 REGION="us-west-2"
 BUCKET="pi-ddns-terraform-state-$(aws sts get-caller-identity --query Account --output text)"
+# Or choose any globally unique name:
+# BUCKET="your-terraform-state-bucket-name"
 
 aws s3api create-bucket \
   --bucket "$BUCKET" \
@@ -81,11 +91,13 @@ cd ..
 
 ```bash
 cp terraform/backend.hcl.example terraform/backend.hcl
-# Edit backend.hcl — set your S3 bucket name
+# Edit backend.hcl — set bucket and region
 
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edit terraform.tfvars — set hosted_zone_id, record_name, github_org, github_repo
+# Edit terraform.tfvars — set aws_account_id, hosted_zone_id, record_name, api_domain_name, tf_state_bucket, github_org, github_repo
 ```
+
+`aws_account_id` must match the account your AWS CLI profile is authenticated to. Terraform validates this at plan time and errors out immediately if they differ.
 
 ### 4. Apply
 
@@ -101,7 +113,7 @@ terraform apply
 api_endpoint            = "https://ddns-api.example.com/update"
 api_health_endpoint     = "https://ddns-api.example.com/health"
 api_key_id              = "<key-id>"
-github_actions_role_arn = "arn:aws:iam::<account>:role/pi-ddns-github-actions"
+github_actions_role_arn = "arn:aws:iam::<account>:role/github-actions-pi-ddns-deploy"
 ```
 
 Retrieve the API key value:
@@ -115,10 +127,12 @@ aws apigateway get-api-key --api-key <key-id> --include-value --query value --ou
 | Secret | Value |
 |--------|-------|
 | `AWS_ROLE_ARN` | `github_actions_role_arn` output |
+| `AWS_ACCOUNT_ID` | your AWS account ID |
 | `AWS_REGION` | e.g. `us-west-2` |
-| `TF_STATE_BUCKET` | your S3 bucket name |
 | `HOSTED_ZONE_ID` | Route53 hosted zone ID |
 | `RECORD_NAME` | e.g. `home.example.com` |
+| `API_DOMAIN_NAME` | e.g. `ddns-api.example.com` |
+| `TF_STATE_BUCKET` | your S3 bucket name for Terraform state |
 
 ### 7. Cron job on the Pi
 
@@ -144,9 +158,7 @@ A `200` response confirms everything is wired up correctly. No DNS record is mod
 
 ## Switching to a different AWS account
 
-No code changes are needed — only GitHub secrets and a one-time bootstrap in the new account.
-
-> The AWS account ID is inferred automatically from your local AWS CLI profile via `aws sts get-caller-identity`. Make sure the correct profile is active before running any commands (e.g. `export AWS_PROFILE=my-profile`).
+No code changes are needed — only `terraform.tfvars`, `backend.hcl`, GitHub secrets, and a one-time bootstrap in the new account.
 
 > Make sure the AWS CLI profile for the new account has all the permission to modify the AWS resources, otherwise the resource creation will fail without notice. Here are the permission needed:
 >
@@ -158,10 +170,6 @@ No code changes are needed — only GitHub secrets and a one-time bootstrap in t
 > | `AWSCertificateManagerFullAccess` | Request and validate the ACM certificate                     |
 > | `AWSLambda_FullAccess`            | Create and configure the Lambda function                     |
 > | `IAMFullAccess`                   | Create IAM roles, policies, and the OIDC provider            |
-
-
-
-
 
 ### 1. Destroy infrastructure in the old account
 
@@ -177,7 +185,7 @@ terraform destroy
 Then delete the Terraform state bucket (this is not managed by Terraform itself):
 
 ```bash
-OLD_BUCKET="pi-ddns-terraform-state-<old-account-id>"
+OLD_BUCKET="your-old-terraform-state-bucket-name"
 
 # Empty the bucket first (required before deletion)
 aws s3 rm s3://"$OLD_BUCKET" --recursive
@@ -195,6 +203,8 @@ export AWS_PROFILE=new-account   # or configure credentials as needed
 # Create the state bucket
 REGION="us-west-2"
 BUCKET="pi-ddns-terraform-state-$(aws sts get-caller-identity --query Account --output text)"
+# Or choose any globally unique name:
+# BUCKET="your-new-terraform-state-bucket-name"
 
 aws s3api create-bucket \
   --bucket "$BUCKET" \
@@ -228,7 +238,7 @@ aws iam create-open-id-connect-provider \
 
 ### 3. Apply Terraform locally
 
-Update `terraform/backend.hcl` with the new bucket name, then:
+Update `terraform/backend.hcl` and `terraform/terraform.tfvars` with the new `aws_account_id` and `tf_state_bucket`, then:
 
 ```bash
 cd terraform
@@ -240,15 +250,16 @@ Note the new `github_actions_role_arn` output.
 
 ### 4. Update GitHub repository secrets
 
-Only these three secrets need to change:
+Only these secrets need to change:
 
 | Secret | Update to |
 |--------|-----------|
 | `AWS_ROLE_ARN` | new `github_actions_role_arn` output |
+| `AWS_ACCOUNT_ID` | new AWS account ID |
 | `TF_STATE_BUCKET` | new S3 bucket name |
 | `HOSTED_ZONE_ID` | new account's Route53 hosted zone ID |
 
-`AWS_REGION` and `RECORD_NAME` stay the same unless also changing region or domain.
+`AWS_REGION`, `RECORD_NAME`, and `API_DOMAIN_NAME` stay the same unless also changing region or domain.
 
 After updating the secrets, the next push to `main` will deploy against the new account.
 

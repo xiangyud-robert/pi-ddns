@@ -2,9 +2,10 @@
 # terraform.tfvars is gitignored — never commit it.
 
 aws_region      = "us-west-2"
-hosted_zone_id  = "Z1D633PJN98FT9"       # your Route53 hosted zone ID
-record_name     = "home.example.com"     # the A record to keep updated
-api_domain_name = "ddns-api.example.com" # custom domain for the API Gateway endpoint
+aws_account_id  = "012345678901"                   # your AWS account ID, need to match the AWS CLI profile
+hosted_zone_id  = "Z1D633PJN98FT9"                 # your Route53 hosted zone ID
+record_name     = "home.example.com"               # the A record to keep updated
+api_domain_name = "ddns-api.example.com"           # custom domain for the API Gateway endpoint
 ttl             = 60
 
 # API Gateway rate limits
@@ -14,5 +15,5 @@ api_quota_limit          = 300  # max requests per day
 
 # GitHub OIDC
 github_org  = "your-github-username"
-github_repo = "pi-ddns"
-tf_state_bucket = "pi-ddns-terraform-state-{AWS_ACCOUNT_ID}"
+github_repo = "your-fork-name-for-pi-ddns"
+tf_state_bucket = "your-pi-ddns-terraform-state-bucket"

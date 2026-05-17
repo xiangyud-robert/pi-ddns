@@ -4,6 +4,11 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
+variable "aws_account_id" {
+  description = "AWS account ID — must match the account the CLI profile is authenticated to"
+  type        = string
+}
+
 variable "hosted_zone_id" {
   description = "Route53 hosted zone ID (e.g. Z1D633PJN98FT9)"
   type        = string

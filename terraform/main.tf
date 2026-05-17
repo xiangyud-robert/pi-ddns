@@ -28,6 +28,21 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+resource "terraform_data" "account_id_check" {
+  lifecycle {
+    precondition {
+      condition     = var.aws_account_id == data.aws_caller_identity.current.account_id
+      error_message = format(
+        "aws_account_id %q does not match the active AWS CLI profile account %q.",
+        var.aws_account_id,
+        data.aws_caller_identity.current.account_id,
+      )
+    }
+  }
+}
+
 # ---------------------------------------------------------------------------
 # Lambda
 # ---------------------------------------------------------------------------
