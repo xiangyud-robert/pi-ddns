@@ -94,7 +94,7 @@ cp terraform/backend.hcl.example terraform/backend.hcl
 # Edit backend.hcl — set bucket and region
 
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edit terraform.tfvars — set aws_account_id, hosted_zone_id, record_name, api_domain_name, tf_state_bucket, github_org, github_repo
+# Edit terraform.tfvars — set aws_account_id, hosted_zone_id, record_names, api_domain_name, tf_state_bucket, github_org, github_repo
 ```
 
 `aws_account_id` must match the account your AWS CLI profile is authenticated to. Terraform validates this at plan time and errors out immediately if they differ.
@@ -142,7 +142,7 @@ A `200` response confirms everything is wired up correctly. No DNS record is mod
 | `AWS_ACCOUNT_ID` | your AWS account ID |
 | `AWS_REGION` | e.g. `us-west-2` |
 | `HOSTED_ZONE_ID` | Route53 hosted zone ID |
-| `RECORD_NAME` | e.g. `home.example.com` |
+| `RECORD_NAMES` | e.g. `["home.example.com","vpn.example.com"]` |
 | `API_DOMAIN_NAME` | e.g. `ddns-api.example.com` |
 | `TF_STATE_BUCKET` | your S3 bucket name for Terraform state |
 
@@ -259,7 +259,7 @@ Only these secrets need to change:
 | `TF_STATE_BUCKET` | new S3 bucket name |
 | `HOSTED_ZONE_ID` | new account's Route53 hosted zone ID |
 
-`AWS_REGION`, `RECORD_NAME`, and `API_DOMAIN_NAME` stay the same unless also changing region or domain.
+`AWS_REGION`, `RECORD_NAMES`, and `API_DOMAIN_NAME` stay the same unless also changing region or domain.
 
 After updating the secrets, the next push to `main` will deploy against the new account.
 

@@ -14,9 +14,9 @@ variable "hosted_zone_id" {
   type        = string
 }
 
-variable "record_name" {
-  description = "Fully-qualified DNS record to upsert (e.g. home.example.com)"
-  type        = string
+variable "record_names" {
+  description = "Fully-qualified DNS records to upsert (e.g. [\"home.example.com\", \"vpn.example.com\"])"
+  type        = list(string)
 }
 
 variable "ttl" {

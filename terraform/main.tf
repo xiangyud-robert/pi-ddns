@@ -102,7 +102,7 @@ resource "aws_lambda_function" "ddns" {
   environment {
     variables = {
       HOSTED_ZONE_ID = var.hosted_zone_id
-      RECORD_NAME    = var.record_name
+      RECORD_NAMES   = join(",", var.record_names)
       TTL            = tostring(var.ttl)
     }
   }

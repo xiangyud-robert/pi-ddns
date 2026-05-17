@@ -9,7 +9,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 const route53 = new Route53Client({});
 
 const HOSTED_ZONE_ID = process.env.HOSTED_ZONE_ID!;
-const RECORD_NAME = process.env.RECORD_NAME!;
+const RECORD_NAMES = process.env.RECORD_NAMES!.split(",").map((n) => n.trim());
 const TTL = parseInt(process.env.TTL ?? "60", 10);
 
 export const handler = async (
@@ -35,24 +35,22 @@ export const handler = async (
       HostedZoneId: HOSTED_ZONE_ID,
       ChangeBatch: {
         Comment: `DDNS update from home server at ${new Date().toISOString()}`,
-        Changes: [
-          {
-            Action: ChangeAction.UPSERT,
-            ResourceRecordSet: {
-              Name: RECORD_NAME,
-              Type: RRType.A,
-              TTL,
-              ResourceRecords: [{ Value: ip }],
-            },
+        Changes: RECORD_NAMES.map((name) => ({
+          Action: ChangeAction.UPSERT,
+          ResourceRecordSet: {
+            Name: name,
+            Type: RRType.A,
+            TTL,
+            ResourceRecords: [{ Value: ip }],
           },
-        ],
+        })),
       },
     })
   );
 
-  console.log(JSON.stringify({ record: RECORD_NAME, ip, updated: true }));
+  console.log(JSON.stringify({ records: RECORD_NAMES, ip, updated: true }));
   return {
     statusCode: 200,
-    body: JSON.stringify({ record: RECORD_NAME, ip, updated: true }),
+    body: JSON.stringify({ records: RECORD_NAMES, ip, updated: true }),
   };
 };

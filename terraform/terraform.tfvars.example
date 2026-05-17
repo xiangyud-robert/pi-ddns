@@ -4,7 +4,8 @@
 aws_region      = "us-west-2"
 aws_account_id  = "012345678901"                   # your AWS account ID, need to match the AWS CLI profile
 hosted_zone_id  = "Z1D633PJN98FT9"                 # your Route53 hosted zone ID
-record_name     = "home.example.com"               # the A record to keep updated
+record_names    = ["home.example.com", "vpn.example.com"]
+                                                   # A records to keep updated (all set to the same IP)
 api_domain_name = "ddns-api.example.com"           # custom domain for the API Gateway endpoint
 ttl             = 60
 
