@@ -227,7 +227,7 @@ data "aws_iam_policy_document" "github_actions_assume" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name               = "pi-ddns-github-actions"
+  name               = "github-actions-pi-ddns-deploy"
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
 }
 
@@ -242,15 +242,25 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     ]
     resources = [aws_lambda_function.ddns.arn]
   }
-  # Terraform state bucket (supplied via backend config)
+  # Terraform state bucket
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
-    resources = ["*"] # narrowed to specific bucket in backend.hcl at init time
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = ["arn:aws:s3:::${var.tf_state_bucket}/pi-ddns/*"]
   }
-  # Read API key value for cron setup output
   statement {
-    actions   = ["apigateway:GET"]
-    resources = ["*"]
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.tf_state_bucket}"]
+  }
+  # Read API Gateway resources this project manages (needed for terraform plan/apply)
+  statement {
+    actions = ["apigateway:GET"]
+    resources = [
+      "arn:aws:apigateway:${var.aws_region}::/restapis/${aws_api_gateway_rest_api.ddns.id}",
+      "arn:aws:apigateway:${var.aws_region}::/restapis/${aws_api_gateway_rest_api.ddns.id}/*",
+      "arn:aws:apigateway:${var.aws_region}::/apikeys/${aws_api_gateway_api_key.home_server.id}",
+      "arn:aws:apigateway:${var.aws_region}::/usageplans/${aws_api_gateway_usage_plan.ddns.id}",
+      "arn:aws:apigateway:${var.aws_region}::/usageplans/${aws_api_gateway_usage_plan.ddns.id}/*",
+    ]
   }
 }
 

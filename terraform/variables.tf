@@ -39,6 +39,11 @@ variable "api_quota_limit" {
   default     = 300
 }
 
+variable "tf_state_bucket" {
+  description = "S3 bucket name used for Terraform state (used to scope the GitHub Actions IAM policy)"
+  type        = string
+}
+
 # OIDC / GitHub Actions
 variable "github_org" {
   description = "GitHub organisation or user that owns the repo (e.g. myusername)"

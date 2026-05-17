@@ -14,3 +14,4 @@ api_quota_limit          = 300  # max requests per day
 # GitHub OIDC
 github_org  = "your-github-username"
 github_repo = "pi-ddns"
+tf_state_bucket = "pi-ddns-terraform-state-{AWS_ACCOUNT_ID}"
