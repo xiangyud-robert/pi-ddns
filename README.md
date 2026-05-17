@@ -25,6 +25,8 @@ These steps are only needed once. After that, CI handles all deployments.
 - Terraform ≥ 1.10
 - Node.js 24 (LTS)
 
+> The AWS account ID is inferred automatically from your local AWS CLI profile via `aws sts get-caller-identity`. Make sure the correct profile is active before running any commands (e.g. `export AWS_PROFILE=my-profile`).
+
 - Create an S3 bucket for Terraform state (versioning + encryption recommended):
 
 ```bash
@@ -139,6 +141,116 @@ curl -sf -H "x-api-key: <your-api-key>" \
 ```
 
 A `200` response confirms everything is wired up correctly. No DNS record is modified.
+
+## Switching to a different AWS account
+
+No code changes are needed — only GitHub secrets and a one-time bootstrap in the new account.
+
+> The AWS account ID is inferred automatically from your local AWS CLI profile via `aws sts get-caller-identity`. Make sure the correct profile is active before running any commands (e.g. `export AWS_PROFILE=my-profile`).
+
+> Make sure the AWS CLI profile for the new account has all the permission to modify the AWS resources, otherwise the resource creation will fail without notice. Here are the permission needed:
+>
+> | AWS Managed Policy                | Why                                                          |
+> |-----------------------------------|--------------------------------------------------------------|
+> | `AmazonAPIGatewayAdministrator`   | Create and configure the REST API, usage plan, and API key   |
+> | `AmazonRoute53FullAccess`         | Upsert DNS records for ACM cert validation and the API alias |
+> | `AmazonS3FullAccess`              | Read and write Terraform state in the S3 bucket              |
+> | `AWSCertificateManagerFullAccess` | Request and validate the ACM certificate                     |
+> | `AWSLambda_FullAccess`            | Create and configure the Lambda function                     |
+> | `IAMFullAccess`                   | Create IAM roles, policies, and the OIDC provider            |
+
+
+
+
+
+### 1. Destroy infrastructure in the old account
+
+Point your AWS CLI at the old account, then tear down all Terraform-managed resources:
+
+```bash
+export AWS_PROFILE=old-account
+
+cd terraform
+terraform destroy
+```
+
+Then delete the Terraform state bucket (this is not managed by Terraform itself):
+
+```bash
+OLD_BUCKET="pi-ddns-terraform-state-<old-account-id>"
+
+# Empty the bucket first (required before deletion)
+aws s3 rm s3://"$OLD_BUCKET" --recursive
+
+# Delete the bucket
+aws s3api delete-bucket --bucket "$OLD_BUCKET"
+```
+
+### 2. Bootstrap the new account
+
+```bash
+# Point your AWS CLI at the new account
+export AWS_PROFILE=new-account   # or configure credentials as needed
+
+# Create the state bucket
+REGION="us-west-2"
+BUCKET="pi-ddns-terraform-state-$(aws sts get-caller-identity --query Account --output text)"
+
+aws s3api create-bucket \
+  --bucket "$BUCKET" \
+  --region "$REGION" \
+  --create-bucket-configuration LocationConstraint="$REGION"
+
+aws s3api put-bucket-versioning \
+  --bucket "$BUCKET" \
+  --versioning-configuration Status=Enabled
+
+aws s3api put-bucket-encryption \
+  --bucket "$BUCKET" \
+  --server-side-encryption-configuration \
+    '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+
+aws s3api put-public-access-block \
+  --bucket "$BUCKET" \
+  --public-access-block-configuration \
+    "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+aws s3api put-bucket-tagging \
+  --bucket "$BUCKET" \
+  --tagging 'TagSet=[{Key=Environment,Value=global},{Key=ManagedBy,Value=terraform},{Key=Name,Value="Terraform State Store"}]'
+
+# Register GitHub OIDC provider
+aws iam create-open-id-connect-provider \
+  --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+```
+
+### 3. Apply Terraform locally
+
+Update `terraform/backend.hcl` with the new bucket name, then:
+
+```bash
+cd terraform
+terraform init -backend-config=backend.hcl
+terraform apply
+```
+
+Note the new `github_actions_role_arn` output.
+
+### 4. Update GitHub repository secrets
+
+Only these three secrets need to change:
+
+| Secret | Update to |
+|--------|-----------|
+| `AWS_ROLE_ARN` | new `github_actions_role_arn` output |
+| `TF_STATE_BUCKET` | new S3 bucket name |
+| `HOSTED_ZONE_ID` | new account's Route53 hosted zone ID |
+
+`AWS_REGION` and `RECORD_NAME` stay the same unless also changing region or domain.
+
+After updating the secrets, the next push to `main` will deploy against the new account.
 
 ## CI/CD
 
