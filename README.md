@@ -97,6 +97,7 @@ terraform apply
 
 ```
 api_endpoint            = "https://ddns-api.example.com/update"
+api_health_endpoint     = "https://ddns-api.example.com/health"
 api_key_id              = "<key-id>"
 github_actions_role_arn = "arn:aws:iam::<account>:role/pi-ddns-github-actions"
 ```
@@ -123,9 +124,21 @@ aws apigateway get-api-key --api-key <key-id> --include-value --query value --ou
 # /etc/cron.d/ddns  (or crontab -e)
 */5 * * * * root curl -sf -X POST \
   -H "x-api-key: <your-api-key>" \
-  https://<id>.execute-api.us-west-2.amazonaws.com/prod/update \
+  https://ddns-api.example.com/update \
   >> /var/log/ddns.log 2>&1
 ```
+
+### 8. Verify with health check
+
+Confirm the full chain (Pi → API Gateway → Lambda) is working:
+
+```bash
+curl -sf -H "x-api-key: <your-api-key>" \
+  https://ddns-api.example.com/health
+# {"status":"ok","timestamp":"2026-05-16T10:00:00.000Z"}
+```
+
+A `200` response confirms everything is wired up correctly. No DNS record is modified.
 
 ## CI/CD
 

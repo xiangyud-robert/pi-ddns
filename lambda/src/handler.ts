@@ -15,6 +15,13 @@ const TTL = parseInt(process.env.TTL ?? "60", 10);
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  if (event.httpMethod === "GET" && event.resource === "/health") {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
+    };
+  }
+
   const ip =
     event.requestContext.identity?.sourceIp ??
     event.headers["X-Forwarded-For"]?.split(",")[0]?.trim();
