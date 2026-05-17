@@ -11,6 +11,3 @@ terraform/backend.hcl
 terraform/*.tfplan
 *.tfstate
 *.tfstate.backup
-
-# temp remove github action
-.github

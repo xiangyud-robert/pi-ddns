@@ -122,7 +122,19 @@ Retrieve the API key value:
 aws apigateway get-api-key --api-key <key-id> --include-value --query value --output text
 ```
 
-### 6. Set GitHub repository secrets
+### 6. Verify with health check
+
+Confirm the API Gateway and Lambda are working before wiring up CI or the cron job:
+
+```bash
+curl -sf -H "x-api-key: <your-api-key>" \
+  https://ddns-api.example.com/health
+# {"status":"ok","timestamp":"2026-05-16T10:00:00.000Z"}
+```
+
+A `200` response confirms everything is wired up correctly. No DNS record is modified.
+
+### 7. Set GitHub repository secrets
 
 | Secret | Value |
 |--------|-------|
@@ -134,7 +146,7 @@ aws apigateway get-api-key --api-key <key-id> --include-value --query value --ou
 | `API_DOMAIN_NAME` | e.g. `ddns-api.example.com` |
 | `TF_STATE_BUCKET` | your S3 bucket name for Terraform state |
 
-### 7. Cron job on the Pi
+### 8. Cron job on the Pi
 
 ```bash
 # /etc/cron.d/ddns  (or crontab -e)
@@ -143,18 +155,6 @@ aws apigateway get-api-key --api-key <key-id> --include-value --query value --ou
   https://ddns-api.example.com/update \
   >> /var/log/ddns.log 2>&1
 ```
-
-### 8. Verify with health check
-
-Confirm the full chain (Pi → API Gateway → Lambda) is working:
-
-```bash
-curl -sf -H "x-api-key: <your-api-key>" \
-  https://ddns-api.example.com/health
-# {"status":"ok","timestamp":"2026-05-16T10:00:00.000Z"}
-```
-
-A `200` response confirms everything is wired up correctly. No DNS record is modified.
 
 ## Switching to a different AWS account
 
