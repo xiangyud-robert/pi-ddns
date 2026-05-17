@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=dist/handler.js --minify",
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --outfile=dist/handler.js --minify",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -11,8 +11,8 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.0",
     "esbuild": "^0.24.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   }
 }

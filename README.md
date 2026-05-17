@@ -23,7 +23,7 @@ These steps are only needed once. After that, CI handles all deployments.
 
 - AWS CLI configured with admin credentials
 - Terraform ≥ 1.6
-- Node.js 20
+- Node.js 24 (LTS)
 
 - Create an S3 bucket for Terraform state (versioning + encryption recommended):
 
